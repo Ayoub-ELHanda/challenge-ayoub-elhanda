@@ -1,23 +1,26 @@
-# Use Node.js with Alpine for smaller size
-FROM node:18-alpine
+# Use an official Node.js runtime as a parent image
+FROM node:18
 
-# Set working directory
-WORKDIR /usr/src/app
+# Set the working directory
+WORKDIR /app
 
-# Copy the package.json and lock file first for dependency caching
+# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install both production and dev dependencies
+# Rebuild bcrypt module from source
+RUN npm rebuild bcrypt --build-from-source
+
+# Install dependencies
 RUN npm install
 
-# Copy the entire source code into the container
+# Copy the rest of the application code
 COPY . .
 
-# Compile TypeScript files for production build
+# Compile TypeScript to JavaScript
 RUN npx tsc
 
-# Expose the port used by the backend
-EXPOSE 5000
+# Expose the port the app runs on
+EXPOSE 3000
 
-# Run the dev server with nodemon for hot reloading
-CMD ["npm", "run", "dev"]
+# Run the app from the dist directory
+CMD ["node", "dist/bin/www.js"]

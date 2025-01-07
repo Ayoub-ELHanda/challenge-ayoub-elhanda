@@ -1,16 +1,23 @@
 version: "3.8"
 
 services:
-
-  # MongoDB Service
-  mongodb:
-    image: mongo:latest
-    container_name: mongodb
+  # Frontend Service
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
     ports:
-      - "27017:27017"
+      - "8080:8080"
     volumes:
-      - mongodb_data:/data/db
-    restart: always
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    command: npm run serve
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - backend
+    networks:
+      - challenge_network
 
   # Backend Service
   backend:
@@ -22,25 +29,27 @@ services:
     volumes:
       - ./backend:/usr/src/app
       - /usr/src/app/node_modules
-    command: npm run dev
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/e-booking-db
     depends_on:
       - mongodb
-    restart: always
+    networks:
+      - challenge_network
 
-  # Frontend Service (Fixed for the Host Error)
-  frontend:
-    build:
-      context: ./frontend
-    container_name: frontend
+  # MongoDB Service
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
     ports:
-      - "8080:8080"
+      - "27017:27017"
     volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
-    command: npm run serve -- --host 0.0.0.0
-    depends_on:
-      - backend
-    restart: always
+      - mongodb_data:/data/db
+    networks:
+      - challenge_network
+
+networks:
+  challenge_network:
+    driver: bridge
 
 volumes:
   mongodb_data:

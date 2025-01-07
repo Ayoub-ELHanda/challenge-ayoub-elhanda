@@ -1,16 +1,14 @@
 {
-    "compilerOptions": {
+  "compilerOptions": {
       "target": "ES2022",
       "module": "CommonJS",
-      "moduleResolution": "Node",
+      "rootDir": "./src",       // ✅ All TypeScript files should be inside 'src'
+      "outDir": "./dist",       // ✅ Compiled files will be output to 'dist'
       "strict": true,
-      "esModuleInterop": true,  
-      "resolveJsonModule": true,
+      "esModuleInterop": true,
       "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true,
-      "outDir": "dist"
-    },
-    "include": ["src/**/*.ts"],
-    "exclude": ["node_modules"]
-  }
-  
+      "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*.ts"],  // ✅ Ensure it includes all TS files under 'src'
+  "exclude": ["node_modules", "dist"]
+}
