@@ -1,90 +1,113 @@
-Project Structure:
+# 🛒 E-Commerce API (Node.js + TypeScript + MongoDB)
 
-frontend/
-├── public/
-│   └── index.html            # Main HTML file with root div
-│   └── favicon.ico           # Favicon for the project
-│
-├── src/
-│   ├── assets/               # Static assets (images, fonts)
-│   │   └── logo.png
-│   │
-│   ├── components/           # Reusable Vue components
-│   │   └── Navbar.vue
-│   │   └── EbookCard.vue     # Component for displaying ebook details
-│   │
-│   ├── views/                # Page components for routing
-│   │   └── HomeView.vue      # Home page view
-│   │   └── RegisterView.vue # Registration page view
-│   │   └── LoginView.vue     # Login page view
-│   │   └── Dashboard.vue     # User dashboard where ebooks are listed
-│   │   └── AddProduct.vue    # Form to add new ebook (product)
-│   │
-│   ├── router/               # Vue Router setup
-│   │   └── index.ts
-│
-│   ├── store/                # Pinia state management
-│   │   └── userStore.ts      # Store to manage user authentication and data
-│
-│   ├── services/             # API calls and Axios setup
-│   │   └── api.ts            # Axios instance to handle HTTP requests
-│
-│   ├── composables/          # Custom Vue 3 hooks
-│   │   └── useAuth.ts        # Composable for user authentication logic
-│
-│   ├── types/                # TypeScript interfaces
-│   │   └── user.ts           # Type definitions for the user
-│
-│   ├── App.vue               # Root Vue component
-│   └── main.ts               # Entry point of the Vue app (bootstrapping Vue)
-│
-├── tests/                    # Jest and Cypress tests
-│   └── unit/                 # Unit tests
-│   └── e2e/                  # End-to-end tests
-│
-├── package.json              # Frontend dependencies and scripts
-├── tsconfig.json             # TypeScript configuration
-├── vue.config.js             # Vue CLI configuration
-├── .env                      # Environment variables for frontend
+Cette API REST complète pour une plateforme e-commerce est construite avec **Node.js**, **TypeScript**, **MongoDB** et **Docker**. Elle permet de gérer les utilisateurs, les produits, les catégories, les boutiques et les avis.
 
+## 📦 Fonctionnalités
 
-backend/
-├── src/
-│   ├── config/               # Configurations and database setup
-│   │   └── db.ts             # Database connection
-│   │   └── dotenvConfig.ts   # Loading environment variables
-│   │
-│   ├── models/               # Mongoose schemas
-│   │   └── User.ts           # User model (for authentication, etc.)
-│   │   └── Ebook.ts          # Product (ebook) model
-│   │
-│   ├── routes/               # Express routes
-│   │   └── userRoutes.ts     # Routes for user-related actions (login, registration)
-│   │   └── ebookRoutes.ts    # Routes for product (ebook) management
-│   │
-│   ├── controllers/          # Controllers for handling business logic
-│   │   └── userController.ts # Logic for user authentication
-│   │   └── ebookController.ts# Logic for adding, fetching products
-│   │
-│   ├── services/             # Service layer for complex logic
-│   │   └── userService.ts    # Services for user-related operations
-│   │
-│   ├── middlewares/          # Middleware (auth, error handling)
-│   │   └── authMiddleware.ts # Middleware for authentication using JWT
-│   │
-│   ├── utils/                # Utility functions (like error handling)
-│   │   └── errorHandler.ts   # Custom error handler
-│   │
-│   ├── types/                # TypeScript types
-│   │   └── user.ts           # Type definitions for user
-│   │   └── ebook.ts          # Type definitions for products (ebooks)
-│   │
-│   └── index.ts              # Main server entry point
-│
-├── tests/                    # Jest and Supertest tests
-│   └── user.test.ts          # Tests for user registration, login
-│   └── ebook.test.ts         # Tests for product management (add, fetch)
-│
-├── package.json              # Backend dependencies and scripts
-├── tsconfig.json             # TypeScript configuration
-├── .env                      # Environment variables for backend
+- **Authentification sécurisée** : Utilisation de **JWT** pour l'authentification.
+- **CRUD complet** :
+  - Gestion des utilisateurs : création, connexion, mise à jour, suppression.
+  - Gestion des produits : création, modification, suppression, consultation.
+  - Gestion des catégories et des boutiques.
+  - Gestion des avis clients : ajout et suppression.
+- **Sécurité renforcée** : Mots de passe hachés avec **bcrypt**.
+- **Téléchargement de fichiers** : Gestion des avatars et images produits via **multer**.
+- **Déploiement Dockerisé** : L'API et MongoDB peuvent être déployés facilement avec **Docker**.
+
+---
+
+## 🚀 Prérequis
+
+- [Node.js](https://nodejs.org/)
+- [Docker](https://www.docker.com/)
+- [MongoDB](https://www.mongodb.com/)
+- **Postman** pour tester les API
+
+---
+
+## 🔧 Configuration
+
+1. **Créer un fichier `.env` à la racine du projet :**
+
+```plaintext
+PORT=3000
+MONGO_URI=mongodb://admin:password@localhost:27017/ecommerce
+JWT_KEY=secret_key
+FRONTEND_URL=http://localhost:8000
+Installer les dépendances :
+bash
+Copier le code
+npm install
+Lancer l'application avec Docker :
+bash
+Copier le code
+docker-compose up --build
+Accédez à l'API via http://localhost:3000
+🛠️ Démarrer en mode Développement
+Lancer MongoDB (si non dockerisé) :
+bash
+Copier le code
+mongod --dbpath ./data
+Lancer le serveur en mode développement :
+bash
+Copier le code
+npm run dev
+📦 Compilation TypeScript
+bash
+Copier le code
+npm run build
+📡 Endpoints API
+Utilisateur :
+POST /user/register : Créer un nouvel utilisateur.
+POST /user/login : Connexion utilisateur.
+GET /user/show : Récupérer les informations d'un utilisateur.
+PUT /user/update : Mettre à jour un utilisateur.
+PUT /user/change-password : Modifier le mot de passe.
+Produit :
+POST /product/create : Créer un produit.
+GET /product/show : Voir un produit.
+PUT /product/update : Mettre à jour un produit.
+DELETE /product/delete : Supprimer un produit.
+Boutique :
+POST /shop/create : Créer une boutique.
+GET /shop/show : Voir une boutique.
+PUT /shop/update : Mettre à jour une boutique.
+DELETE /shop/delete : Supprimer une boutique.
+✅ Tests avec Postman
+Importer les collections Postman.
+Tester les routes CRUD.
+Vérifier les réponses JSON et les statuts HTTP.
+🔐 Sécurité
+Hashing des mots de passe avec bcrypt.
+JWT pour la gestion des sessions.
+CORS pour protéger les requêtes entrantes.
+📦 Dépendances principales
+Backend :
+
+express
+mongoose
+typescript
+bcrypt
+jsonwebtoken
+multer
+dotenv
+Outils de développement :
+
+ts-node
+nodemon
+typescript
+👨‍💻 Contribuer
+Les contributions sont les bienvenues ! Voici comment contribuer :
+
+Forkez le projet.
+Créez une branche (feature/nouvelle-fonctionnalite).
+Committez vos changements.
+Poussez vers la branche principale.
+Créez une Pull Request.
+📃 Licence
+Ce projet est sous licence MIT, vous êtes libre de l'utiliser et de le modifier.
+
+📞 Support
+Email : elhandaayo@gmail.com
+Issues : Ouvrez un ticket sur le dépôt GitHub.
+🌟 Merci d'utiliser cette API E-commerce ! Bon développement !
