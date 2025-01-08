@@ -1,149 +1,154 @@
-import mongoose from "../../config/db";  // Correct path to db.ts
-import { productCategorySchema, productSchema } from "../../models/product";  // Correct path to product models
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from 'express';
+import { Product, ProductCategory, IProduct } from '../../models/product'; // Ensure correct import
 
-// MongoDB connection setup (Consider moving this to a separate db.ts file in the config folder)
-mongoose.connect("mongodb://admin:password@localhost:27017/ecommerce");
-
-// Defining the models using the imported schemas
-const ProductCategory = mongoose.model("ProductCategory", productCategorySchema);
-const Product = mongoose.model("Product", productSchema);
-
-// Product Category Management ============================================
-
-/**
- * List all product categories
- */
-export const listProductCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
+// ✅ Utility function for consistent error handling in async functions
+const asyncHandler = (
+    fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) => async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const categories = await ProductCategory.find({});
-        res.json(categories);
+        await fn(req, res, next);
     } catch (error) {
         next(error);
     }
 };
 
 /**
- * Create a new product category
+ * ✅ List all eBooks
  */
-export const createProductCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const newProductCategory = new ProductCategory({
-            name: req.body.name,
-        });
-        await newProductCategory.save();
-        res.status(201).json(newProductCategory);
-    } catch (error) {
-        next(error);
-    }
-};
+export const listProducts = asyncHandler(async (req, res) => {
+    const products = await Product.find({});
+    res.json(products);
+});
 
 /**
- * Update an existing product category by ID
+ * ✅ Create a new eBook
  */
-export const updateProductCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const updatedCategory = await ProductCategory.findByIdAndUpdate(
-            req.query.id,
-            { name: req.body.name },
-            { new: true }
-        );
-        res.json(updatedCategory);
-    } catch (error) {
-        next(error);
-    }
-};
+export const createProduct = asyncHandler(async (req, res) => {
+    const {
+        title, author, images, price, description,
+        isbn, publisher, publicationDate, format, categories, shop
+    } = req.body;
+
+    const newProduct = new Product({
+        title, author, images, price, description,
+        isbn, publisher, publicationDate, format, categories, shop
+    });
+
+    await newProduct.save();
+    res.status(201).json(newProduct);
+});
 
 /**
- * Show a specific product category by ID
+ * ✅ Update an eBook by ID
  */
-export const showProductCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const category = await ProductCategory.findById(req.query.id).populate("products");
-        res.json(category);
-    } catch (error) {
-        next(error);
+export const updateProduct = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const updateData = req.body;
+
+    if (!productId || productId.length !== 24) {
+        res.status(400).json({ message: 'Invalid product ID format' });
+        return;
     }
-};
+
+    const updatedProduct = await Product.findByIdAndUpdate(productId, updateData, { new: true });
+    if (!updatedProduct) {
+        res.status(404).json({ message: 'Product not found' });
+        return;
+    }
+    res.json(updatedProduct);
+});
 
 /**
- * Delete a product category by ID
+ * ✅ Show a specific eBook by ID
  */
-export const deleteProductCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const deletedCategory = await ProductCategory.findByIdAndDelete(req.query.id);
-        res.json(deletedCategory);
-    } catch (error) {
-        next(error);
-    }
-};
+export const showProduct = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const product = await Product.findById(productId)
+        .populate('categories')
+        .populate('reviews');
 
-// Product Management ======================================================
+    if (!product) {
+        res.status(404).json({ message: 'Product not found' });
+        return;
+    }
+    res.json(product);
+});
 
 /**
- * List all products
+ * ✅ Delete an eBook by ID
  */
-export const listProduct = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const products = await Product.find({}).populate("categories");
-        res.json(products);
-    } catch (error) {
-        next(error);
+export const deleteProduct = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const deletedProduct = await Product.findByIdAndDelete(productId);
+
+    if (!deletedProduct) {
+        res.status(404).json({ message: 'Product not found' });
+        return;
     }
-};
+    res.status(204).send();
+});
 
 /**
- * Show a specific product by ID
+ * ✅ List all Product Categories
  */
-export const showProduct = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const product = await Product.findById(req.query.productID);
-        res.json(product);
-    } catch (error) {
-        next(error);
-    }
-};
+export const listProductCategory = asyncHandler(async (req, res) => {
+    const categories = await ProductCategory.find({});
+    res.json(categories);
+});
 
 /**
- * Delete a specific product by ID
+ * ✅ Create a Product Category
  */
-export const deleteProduct = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const deletedProduct = await Product.findByIdAndDelete(req.query.id);
-        res.json(deletedProduct);
-    } catch (error) {
-        next(error);
+export const createProductCategory = asyncHandler(async (req, res) => {
+    const { name } = req.body;
+    const newCategory = new ProductCategory({ name });
+    await newCategory.save();
+    res.status(201).json(newCategory);
+});
+/**
+ * ✅ Update a Product Category by ID
+ */
+export const updateProductCategory = asyncHandler(async (req, res) => {
+    const { categoryId } = req.params;
+    const updateData = req.body;
+
+    if (!categoryId || categoryId.length !== 24) {
+        res.status(400).json({ message: 'Invalid category ID format' });
+        return;
     }
-};
+
+    const updatedCategory = await ProductCategory.findByIdAndUpdate(categoryId, updateData, { new: true });
+    if (!updatedCategory) {
+        res.status(404).json({ message: 'Category not found' });
+        return;
+    }
+    res.json(updatedCategory);
+});
+
+/**
+ * ✅ Show a specific Product Category by ID
+ */
+export const showProductCategory = asyncHandler(async (req, res) => {
+    const { categoryId } = req.params;
+    const category = await ProductCategory.findById(categoryId).populate('products');
+
+    if (!category) {
+        res.status(404).json({ message: 'Category not found' });
+        return;
+    }
+    res.json(category);
+});
+
+/**
+ * ✅ Delete a Product Category
+ */
+export const deleteProductCategory = asyncHandler(async (req, res) => {
+    const { categoryId } = req.params;
+    const deletedCategory = await ProductCategory.findByIdAndDelete(categoryId);
+
+    if (!deletedCategory) {
+        res.status(404).json({ message: 'Category not found' });
+        return;
+    }
+    res.status(204).send();
+});

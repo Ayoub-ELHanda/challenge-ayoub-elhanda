@@ -18,4 +18,9 @@ const siteSchema = new Schema<ISite>({
     keywords: { type: String },
 });
 
-export { siteSchema };
+/**
+ * ✅ Exporting the schema and the model properly
+ */
+const Site = mongoose.model<ISite>("Site", siteSchema);
+
+export { siteSchema, Site };

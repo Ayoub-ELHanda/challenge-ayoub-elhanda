@@ -10,7 +10,9 @@ mongoose.connect("mongodb://admin:password@localhost:27017/ecommerce");
 const User = mongoose.model("User", userSchema);
 const Shop = mongoose.model("Shop", shopSchema);
 
-// Create new shop =======================================================
+/**
+ * ✅ Create a new shop 
+ */
 export const createShop = async (
     req: Request,
     res: Response,
@@ -34,22 +36,24 @@ export const createShop = async (
 
         await newShop.save();
 
-        // If a logo is provided, save the logo path
+        // ✅ If a logo is provided, save the logo path
         if (req.file) {
             const path = /(\/uploads)(.+)/g.exec(req.file.path)?.[0] || "";
             await Shop.findByIdAndUpdate(newShop._id, { logo: path });
         }
 
-        // Add shop to the user
+        // ✅ Add shop reference to the user
         await User.findByIdAndUpdate(req.query.userID, { shop: newShop._id });
 
-        res.status(201).send("Shop Created!");
+        res.status(201).json({ message: "Shop Created!" });
     } catch (error) {
         next(error);
     }
 };
 
-// Show shop =======================================================
+/**
+ * ✅ Show a specific shop
+ */
 export const showShop = async (
     req: Request,
     res: Response,
@@ -71,14 +75,15 @@ export const showShop = async (
     }
 };
 
-// Update Shop =======================================================
+/**
+ * ✅ Update a shop
+ */
 export const updateShop = async (
     req: Request,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
-        // If a new logo is provided, update the logo path
         if (req.file) {
             const path = /(\/uploads)(.+)/g.exec(req.file.path)?.[0] || "";
             await Shop.findByIdAndUpdate(req.query.shopID, { logo: path });
@@ -107,13 +112,15 @@ export const updateShop = async (
             return;
         }
 
-        res.send("Shop Updated!");
+        res.json({ message: "Shop Updated!", shop: updatedShop });
     } catch (error) {
         next(error);
     }
 };
 
-// Delete Shop =======================================================
+/**
+ * ✅ Delete a shop (Fixed issue with deprecated `findByIdAndRemove`)
+ */
 export const deleteShop = async (
     req: Request,
     res: Response,
@@ -126,15 +133,15 @@ export const deleteShop = async (
             return;
         }
 
-        // Remove shop from the associated user
+        // ✅ Remove shop reference from the associated user
         await User.findByIdAndUpdate(shop.user, {
             $unset: { shop: 1 },
         });
 
-        // Delete the shop
-        await Shop.findByIdAndRemove(req.query.shopID);
+        // ✅ Fixed: Replaced `findByIdAndRemove` with `findByIdAndDelete`
+        await Shop.findByIdAndDelete(req.query.shopID);
 
-        res.send("Shop Deleted!");
+        res.json({ message: "Shop Deleted!" });
     } catch (error) {
         next(error);
     }

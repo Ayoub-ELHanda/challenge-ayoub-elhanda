@@ -1,13 +1,18 @@
 import mongoose, { Schema, Document, Types } from "mongoose";
 
 /**
- * Interface for Product Document
+ * ✅ Interface for Product Document specialized as an eBook
  */
 export interface IProduct extends Document {
-    name: string;
+    title: string;
+    author: string;
     images?: string[];
-    price: string;
+    price: number;
     description?: string;
+    isbn: string;
+    publisher: string;
+    publicationDate: Date;
+    format: string;
     categories?: Types.ObjectId[];
     shop?: Types.ObjectId;
     reviews?: Types.ObjectId[];
@@ -16,48 +21,49 @@ export interface IProduct extends Document {
 }
 
 /**
- * Interface for Product Category Document
+ * ✅ Product Schema Definition for eBooks
+ */
+const productSchema = new Schema<IProduct>({
+    title: { type: String, required: true, index: true },
+    author: { type: String, required: true },
+    images: [{ type: String }],
+    price: { type: Number, required: true },
+    description: { type: String },
+    isbn: { type: String, required: true },
+    publisher: { type: String, required: true },
+    publicationDate: { type: Date, required: true },
+    format: { type: String, required: true },
+    categories: [{ type: Schema.Types.ObjectId, ref: "ProductCategory" }],
+    shop: { type: Schema.Types.ObjectId, ref: "Shop" },
+    reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
+}, {
+    timestamps: {
+        createdAt: "created_at",
+        updatedAt: "updated_at",
+    },
+});
+
+/**
+ * ✅ Interface for ProductCategory Document
  */
 export interface IProductCategory extends Document {
     name: string;
     products?: Types.ObjectId[];
-    created_at?: Date;
 }
 
 /**
- * Product Schema Definition
+ * ✅ Product Category Schema Definition
  */
-const productSchema = new Schema<IProduct>(
-    {
-        name: { type: String, required: true },
-        images: [{ type: String }],
-        price: { type: String, required: true },
-        description: { type: String },
-        categories: [{ type: Schema.Types.ObjectId, ref: "ProductCategory" }],
-        shop: { type: Schema.Types.ObjectId, ref: "Shop" },
-        reviews: [{ type: Schema.Types.ObjectId, ref: "Review" }],
-    },
-    {
-        timestamps: {
-            createdAt: "created_at",
-            updatedAt: "updated_at",
-        },
-    }
-);
+const productCategorySchema = new Schema<IProductCategory>({
+    name: { type: String, required: true },
+    products: [{ type: Schema.Types.ObjectId, ref: 'Product' }],
+});
 
 /**
- * Product Category Schema Definition
+ * ✅ Exporting Models
  */
-const productCategorySchema = new Schema<IProductCategory>(
-    {
-        name: { type: String, required: true },
-        products: [{ type: Schema.Types.ObjectId, ref: "Product" }],
-    },
-    {
-        timestamps: {
-            createdAt: "created_at",
-        },
-    }
-);
+export const Product = mongoose.model<IProduct>('Product', productSchema);
+export const ProductCategory = mongoose.model<IProductCategory>('ProductCategory', productCategorySchema);
 
+// ✅ Export Schemas if Needed
 export { productSchema, productCategorySchema };

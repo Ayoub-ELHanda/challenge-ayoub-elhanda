@@ -1,21 +1,12 @@
-import mongoose from "../config/db";  // Correct path to db.ts
-import { siteSchema } from "../models/site";
-import { productSchema, productCategorySchema } from "../models/product";
-import { reviewSchema } from "../models/review";
-import { shopSchema } from "../models/shop";
-import { userSchema } from "../models/user";
 import { Request, Response, NextFunction } from "express";
+import { Site } from "../models/site";
+import { Product, ProductCategory } from "../models/product";
+import { Review } from "../models/review";
+import { Shop } from "../models/shop";
+import { User } from "../models/user";
+import mongoose, { Types } from "mongoose";
 
-mongoose.connect("mongodb://admin:password@localhost:27017/ecommerce");
-
-// Defining models using the imported schemas
-const Site = mongoose.model("Site", siteSchema);
-const User = mongoose.model("User", userSchema);
-const Product = mongoose.model("Product", productSchema);
-const ProductCategory = mongoose.model("ProductCategory", productCategorySchema);
-const Shop = mongoose.model("Shop", shopSchema);
-const Review = mongoose.model("Review", reviewSchema);
-
+// Show all sites
 export const showSite = async (
     req: Request,
     res: Response,
@@ -29,72 +20,20 @@ export const showSite = async (
     }
 };
 
-// Retrieve all product categories ========================================
-export const listAllCategories = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const categories = await ProductCategory.find({});
-        res.json(categories);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Retrieve recently created products =====================================
-export const listRecentProducts = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const products = await Product.find({})
-            .sort({ created_at: -1 })
-            .limit(15);
-        res.json(products);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Retrieve recently created shops ========================================
+// ✅ Show all shops
 export const listRecentShops = async (
     req: Request,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
-        const shops = await Shop.find({})
-            .sort({ created_at: -1 })
-            .limit(15);
+        const shops = await Shop.find().sort({ created_at: -1 }).limit(15);
         res.json(shops);
     } catch (error) {
         next(error);
     }
 };
-
-// Retrieve one single product category ===================================
-export const showCategory = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    try {
-        const category = await ProductCategory.findById(req.query.categoryID)
-            .populate("products");
-        if (!category) {
-            res.status(404).json({ message: "Category not found" });
-            return;
-        }
-        res.json(category);
-    } catch (error) {
-        next(error);
-    }
-};
-
-// Retrieve one single shop ===============================================
+// ✅ Show a single shop
 export const showShop = async (
     req: Request,
     res: Response,
@@ -111,8 +50,7 @@ export const showShop = async (
         next(error);
     }
 };
-
-// Retrieve one single product ============================================
+// ✅ Show a single product
 export const showProduct = async (
     req: Request,
     res: Response,
@@ -130,15 +68,74 @@ export const showProduct = async (
     }
 };
 
-// Add review to a product ================================================
+// List all product categories
+export const listAllCategories = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const categories = await ProductCategory.find({});
+        res.json(categories);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// List recently created products
+export const listRecentProducts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const products = await Product.find({})
+            .sort({ created_at: -1 })
+            .limit(15);
+        res.json(products);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// Show a single product category
+export const showCategory = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {  
+    try {
+        const categoryID = req.query.categoryID as string;
+        if (!categoryID) {
+            res.status(400).json({ message: "Category ID is required" });
+            return;
+        }
+
+        const category = await ProductCategory.findById(categoryID).populate("products");
+        if (!category) {
+            res.status(404).json({ message: "Category not found" });
+            return;
+        }
+        res.json(category); // No return statement to avoid error
+    } catch (error) {
+        next(error);  // Don't return next(error) with void
+    }
+};
+
+
+
+// Add a review to a product
 export const addProductReview = async (
     req: Request,
     res: Response,
     next: NextFunction
 ): Promise<void> => {
     try {
-        const product = await Product.findById(req.query.productID);
-        const user = await User.findById(req.query.userID);
+        const productId = req.query.productID as string;
+        const userId = req.query.userID as string;
+
+        const product = await Product.findById(productId);
+        const user = await User.findById(userId);
 
         if (!product || !user) {
             res.status(404).json({ message: "Product or User not found" });
@@ -154,14 +151,15 @@ export const addProductReview = async (
 
         await newReview.save();
 
-        // Update product and user with the new review
-        await Product.findByIdAndUpdate(product._id, {
-            $push: { reviews: newReview._id }
-        });
+        // ✅ Safely handle reviews with explicit casting
+        product.reviews = product.reviews || [];
+        user.reviews = user.reviews || [];
 
-        await User.findByIdAndUpdate(user._id, {
-            $push: { reviews: newReview._id }
-        });
+        product.reviews.push(newReview._id as Types.ObjectId);
+        user.reviews.push(newReview._id as Types.ObjectId);
+
+        await product.save();
+        await user.save();
 
         res.status(201).json(newReview);
     } catch (error) {
@@ -169,40 +167,41 @@ export const addProductReview = async (
     }
 };
 
-// Remove review from product and user
+// Remove a review from a product
 export const removeProductReview = async (
     req: Request,
     res: Response,
     next: NextFunction
-): Promise<void> => {
+): Promise<Response | void> => {
     try {
         const reviewId = req.query.reviewID as string;
         const productId = req.query.productID as string;
         const userId = req.query.userID as string;
+
+        if (!reviewId || !productId || !userId) {
+            return res.status(400).json({ message: "All IDs are required" });
+        }
 
         const review = await Review.findById(reviewId);
         const product = await Product.findById(productId);
         const user = await User.findById(userId);
 
         if (!review || !product || !user) {
-            res.status(404).json({ message: "Review, Product, or User not found" });
-            return;
+            return res.status(404).json({ message: "Review, Product, or User not found" });
         }
 
-        // Remove review from product and user
-        await Product.findByIdAndUpdate(productId, {
-            $pull: { reviews: reviewId },
-        });
+        // ✅ Safely handle reviews using optional chaining
+        product.reviews = product.reviews?.filter(id => id.toString() !== reviewId) ?? [];
+        user.reviews = user.reviews?.filter(id => id.toString() !== reviewId) ?? [];
 
-        await User.findByIdAndUpdate(userId, {
-            $pull: { reviews: reviewId },
-        });
+        // ✅ Use deleteOne() instead of deprecated remove()
+        await review.deleteOne();
+        await product.save();
+        await user.save();
 
-        // Delete the review itself
-        await review.remove();
-
-        res.json({ message: "Review removed successfully" });
+        return res.json({ message: "Review removed successfully" });
     } catch (error) {
         next(error);
     }
 };
+

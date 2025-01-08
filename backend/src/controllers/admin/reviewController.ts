@@ -1,12 +1,5 @@
-import mongoose from "../../config/db";  // Correct path to db.ts
-import { reviewSchema } from "./../../models/review";
 import { Request, Response, NextFunction } from "express";
-
-// MongoDB connection setup (Consider moving this to a central db.ts file)
-mongoose.connect("mongodb://admin:password@localhost:27017/ecommerce");
-
-// Define the Review model using the imported schema
-const Review = mongoose.model("Review", reviewSchema);
+import { Review } from "../../models/review";  // Assume Review is exported from the review model file
 
 // Product Review Management ================================================
 
@@ -40,6 +33,10 @@ export const showReview = async (
         const review = await Review.findById(req.query.id)
             .populate("user")
             .populate("product");
+        if (!review) {
+            res.status(404).send({ message: "Review not found" });
+            return;
+        }
         res.json(review);
     } catch (error) {
         next(error);
@@ -56,6 +53,10 @@ export const deleteReview = async (
 ): Promise<void> => {
     try {
         const deletedReview = await Review.findByIdAndDelete(req.query.id);
+        if (!deletedReview) {
+            res.status(404).send({ message: "Review not found" });
+            return;
+        }
         res.json(deletedReview);
     } catch (error) {
         next(error);

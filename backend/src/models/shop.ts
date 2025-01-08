@@ -50,4 +50,6 @@ const shopSchema = new Schema<IShop>(
     }
 );
 
+// ✅ Export both the Model and Schema
+export const Shop = mongoose.model<IShop>("Shop", shopSchema);
 export { shopSchema };

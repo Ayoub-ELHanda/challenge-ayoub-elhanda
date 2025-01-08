@@ -1,9 +1,9 @@
-import mongoose from "../../config/db";  // Correct path to db.ts
+import mongoose from "../../config/db";
 import { productSchema, productCategorySchema } from "../../models/product";
 import { shopSchema } from "../../models/shop";
 import { Request, Response, NextFunction } from "express";
 
-// MongoDB connection setup (will now be imported from db.ts)
+// MongoDB connection setup (ensure it is established centrally)
 mongoose.connect("mongodb://admin:password@localhost:27017/ecommerce");
 
 // Defining models using the imported schemas
@@ -13,8 +13,8 @@ const Shop = mongoose.model("Shop", shopSchema);
 
 // Create Product =======================================================
 export const createProduct = async (
-  req: Request<{}, {}, { name: string, price: string, description: string, categories: string[] }, { shopID: string }>, 
-  res: Response, 
+  req: Request<{}, {}, { name: string; price: string; description: string; categories: string[] }, { shopID: string }>,
+  res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
@@ -26,7 +26,9 @@ export const createProduct = async (
     });
     await newProduct.save();
 
-    const productID = newProduct._id;
+    const productID: string = newProduct._id instanceof mongoose.Types.ObjectId
+    ? newProduct._id.toHexString()
+    : newProduct._id as string; // Type assertion as fallback
 
     // Add product to shop
     await Shop.findByIdAndUpdate(req.query.shopID, {
@@ -74,7 +76,7 @@ export const showProduct = async (
 
 // Update Product =======================================================
 export const updateProduct = async (
-  req: Request<{}, {}, { name: string, price: string, description: string, categories: string[] }, { productID: string }>,
+  req: Request<{}, {}, { name: string; price: string; description: string; categories: string[] }, { productID: string }>,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
@@ -98,7 +100,7 @@ export const updateProduct = async (
     if (req.body.categories) {
       const oldCategories = updatedProduct.categories || [];
       for (const categoryID of oldCategories) {
-        await removeProductCategory(req.query.productID, categoryID.toString());  // Ensure toString to avoid type mismatch
+        await removeProductCategory(req.query.productID, categoryID.toString());
       }
 
       for (const categoryID of req.body.categories) {
@@ -122,39 +124,37 @@ export const updateProduct = async (
   }
 };
 
-// Delete Product =======================================================
+// ✅ Delete Product (Replaced findByIdAndRemove with findByIdAndDelete)
 export const deleteProduct = async (
-    req: Request<{}, {}, {}, { productID: string }>,
-    res: Response,
-    next: NextFunction
-  ): Promise<void> => {
-    try {
-      const deletedProduct = await Product.findByIdAndRemove(req.query.productID);
-      if (!deletedProduct) {
-        res.status(404).json({ message: "Product not found" });
-        return;
-      }
-  
-      // Remove product from shop
-      await Shop.findByIdAndUpdate(deletedProduct.shop, {
+  req: Request<{}, {}, {}, { productID: string }>,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const deletedProduct = await Product.findByIdAndDelete(req.query.productID);  // ✅ Fixed Method Usage
+    if (!deletedProduct) {
+      res.status(404).json({ message: "Product not found" });
+      return;
+    }
+
+    // Remove product from shop
+    await Shop.findByIdAndUpdate(deletedProduct.shop, {
+      $pull: { products: deletedProduct._id },
+    });
+
+    // Handle categories safely
+    const categories = deletedProduct.categories || [];
+    for (const categoryID of categories) {
+      await ProductCategory.findByIdAndUpdate(categoryID, {
         $pull: { products: deletedProduct._id },
       });
-  
-      // Handle categories being possibly undefined
-      const categories = deletedProduct.categories || []; // Use an empty array if categories are undefined
-      // Remove product from categories
-      for (const categoryID of categories) {
-        await ProductCategory.findByIdAndUpdate(categoryID, {
-          $pull: { products: deletedProduct._id },
-        });
-      }
-  
-      res.json({ message: "Product deleted successfully" });
-    } catch (error) {
-      next(error);
     }
-  };
-  
+
+    res.json({ message: "Product deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
 
 // Helper Functions =======================================================
 async function addProductCategory(productID: string, categoryID: string): Promise<void> {

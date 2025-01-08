@@ -70,4 +70,7 @@ const userSchema = new Schema<IUser>(
     }
 );
 
-export { roleSchema, userSchema };
+// ✅ Export both the Model and Schema
+export const User = mongoose.model<IUser>("User", userSchema);
+export const Role = mongoose.model<IRole>("Role", roleSchema);
+export { userSchema, roleSchema };
