@@ -3,14 +3,15 @@ services:
   backend:
     build: .
     ports:
-      - "3000:3000"
+      - "5000:5000"
     volumes:
       - .:/app
       - /app/node_modules
     environment:
-      - MONGO_URI=mongodb://mongo:27017/ecommerce
+      - MONGO_URI=mongodb://admin:password@mongo:27017/ecommerce
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
 
   mongo:
     image: mongo
@@ -21,6 +22,11 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongo", "-u", "admin", "-p", "password", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mongo_data:

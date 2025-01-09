@@ -1,4 +1,4 @@
-import mongoose from "../../config/db";  // Correct path to db.ts
+import { mongooseInstance as mongoose } from "../../config/db";
 import { siteSchema } from "./../../models/site";
 import { Request, Response, NextFunction } from "express";
 

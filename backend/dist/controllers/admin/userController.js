@@ -1,16 +1,13 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.showUser = exports.updateUser = exports.listUser = exports.deleteRole = exports.showRole = exports.updateRole = exports.createRole = exports.listRole = void 0;
-const db_1 = __importDefault(require("../../config/db")); // Correct path to db.ts
+const db_1 = require("../../config/db");
 const user_1 = require("./../../models/user");
 // MongoDB connection setup (consider moving to a central db.ts file)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
+db_1.mongooseInstance.connect("mongodb://admin:password@localhost:27017/ecommerce");
 // Define the Role and User models using the imported schemas
-const Role = db_1.default.model("Role", user_1.roleSchema);
-const User = db_1.default.model("User", user_1.userSchema);
+const Role = db_1.mongooseInstance.model("Role", user_1.roleSchema);
+const User = db_1.mongooseInstance.model("User", user_1.userSchema);
 // Role Management ======================================================
 /**
  * List all roles

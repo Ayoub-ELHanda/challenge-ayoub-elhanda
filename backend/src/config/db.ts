@@ -1,27 +1,27 @@
-import mongoose from 'mongoose';
+// src/config/db.ts
 
-const mongoURI = process.env.NODE_ENV === 'test' 
-  ? process.env.TEST_MONGO_URI || 'mongodb://admin:password@localhost:27017/ecommerce_test' 
-  : process.env.MONGO_URI || 'mongodb://admin:password@localhost:27017/ecommerce';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const mongoURI = process.env.MONGO_URI;
+if (!mongoURI) {
+  throw new Error('MONGO_URI environment variable is not set.');
+}
+
+console.log("Connecting to MongoDB with URI:", mongoURI);
 
 export const connectDB = async (): Promise<void> => {
-    if (mongoose.connection.readyState) {
-        await mongoose.disconnect();
-    }
-
-    try {
-        await mongoose.connect(mongoURI);
-        console.log("✅ MongoDB connected successfully!");
-    } catch (error) {
-        console.error("❌ MongoDB connection error:", error);
-        process.exit(1);
-    }
+  // connection logic
 };
 
 export const disconnectDB = async (): Promise<void> => {
-    if (mongoose.connection.readyState !== 0) {
-        await mongoose.disconnect();
-    }
+  // disconnection logic
 };
 
-export default mongoose;
+export const dropTestDB = async (): Promise<void> => {
+  // drop database logic
+};
+
+export const mongooseInstance = mongoose;

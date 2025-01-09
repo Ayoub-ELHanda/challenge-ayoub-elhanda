@@ -1,47 +1,32 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteProduct = exports.updateProduct = exports.showProduct = exports.createProduct = void 0;
-const db_1 = __importDefault(require("../../config/db")); // Correct path to db.ts
+const db_1 = require("../../config/db");
 const product_1 = require("../../models/product");
 const shop_1 = require("../../models/shop");
-// MongoDB connection setup (will now be imported from db.ts)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
+// MongoDB connection setup (ensure it is established centrally)
+db_1.mongooseInstance.connect("mongodb://admin:password@localhost:27017/ecommerce");
 // Defining models using the imported schemas
-const Product = db_1.default.model("Product", product_1.productSchema);
-const ProductCategory = db_1.default.model("ProductCategory", product_1.productCategorySchema);
-const Shop = db_1.default.model("Shop", shop_1.shopSchema);
+const Product = db_1.mongooseInstance.model("Product", product_1.productSchema);
+const ProductCategory = db_1.mongooseInstance.model("ProductCategory", product_1.productCategorySchema);
+const Shop = db_1.mongooseInstance.model("Shop", shop_1.shopSchema);
 // Create Product =======================================================
 const createProduct = async (req, res, next) => {
     try {
+        const { name, price, description, categories } = req.body;
+        const shopID = req.query.shopID; // The shop ID should be passed via query param
+        // Create the new product
         const newProduct = new Product({
-            name: req.body.name,
-            price: req.body.price,
-            description: req.body.description,
-            shop: req.query.shopID,
+            name,
+            price,
+            description,
+            shop: shopID,
+            categories,
         });
         await newProduct.save();
-        const productID = newProduct._id;
-        // Add product to shop
-        await Shop.findByIdAndUpdate(req.query.shopID, {
-            $push: { products: productID },
-        });
-        // Add categories
-        if (req.body.categories) {
-            for (const categoryID of req.body.categories) {
-                await addProductCategory(productID, categoryID);
-            }
-        }
-        // Add images if available
-        if (req.files && Array.isArray(req.files)) {
-            for (const file of req.files) {
-                const path = /(\/uploads)(.+)/g.exec(file.path)?.[0] || "";
-                await addProductImage(productID, path);
-            }
-        }
-        res.status(201).json(newProduct);
+        // Add the product to the shop's products array
+        await Shop.findByIdAndUpdate(shopID, { $push: { products: newProduct._id } });
+        res.status(201).json(newProduct); // Send the created product as the response
     }
     catch (error) {
         next(error);
@@ -79,7 +64,7 @@ const updateProduct = async (req, res, next) => {
         if (req.body.categories) {
             const oldCategories = updatedProduct.categories || [];
             for (const categoryID of oldCategories) {
-                await removeProductCategory(req.query.productID, categoryID.toString()); // Ensure toString to avoid type mismatch
+                await removeProductCategory(req.query.productID, categoryID.toString());
             }
             for (const categoryID of req.body.categories) {
                 await addProductCategory(req.query.productID, categoryID);
@@ -100,10 +85,10 @@ const updateProduct = async (req, res, next) => {
     }
 };
 exports.updateProduct = updateProduct;
-// Delete Product =======================================================
+// ✅ Delete Product (Replaced findByIdAndRemove with findByIdAndDelete)
 const deleteProduct = async (req, res, next) => {
     try {
-        const deletedProduct = await Product.findByIdAndRemove(req.query.productID);
+        const deletedProduct = await Product.findByIdAndDelete(req.query.productID); // ✅ Fixed Method Usage
         if (!deletedProduct) {
             res.status(404).json({ message: "Product not found" });
             return;
@@ -112,9 +97,8 @@ const deleteProduct = async (req, res, next) => {
         await Shop.findByIdAndUpdate(deletedProduct.shop, {
             $pull: { products: deletedProduct._id },
         });
-        // Handle categories being possibly undefined
-        const categories = deletedProduct.categories || []; // Use an empty array if categories are undefined
-        // Remove product from categories
+        // Handle categories safely
+        const categories = deletedProduct.categories || [];
         for (const categoryID of categories) {
             await ProductCategory.findByIdAndUpdate(categoryID, {
                 $pull: { products: deletedProduct._id },

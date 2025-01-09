@@ -1,4 +1,4 @@
-import mongoose from "../../config/db";
+import { mongooseInstance as mongoose } from "../../config/db";
 import { productSchema, productCategorySchema } from "../../models/product";
 import { shopSchema } from "../../models/shop";
 import { Request, Response, NextFunction } from "express";
@@ -18,39 +18,23 @@ export const createProduct = async (
   next: NextFunction
 ): Promise<void> => {
   try {
+    const { name, price, description, categories } = req.body;
+    const shopID = req.query.shopID;  // The shop ID should be passed via query param
+
+    // Create the new product
     const newProduct = new Product({
-      name: req.body.name,
-      price: req.body.price,
-      description: req.body.description,
-      shop: req.query.shopID,
+      name,
+      price,
+      description,
+      shop: shopID,
+      categories,
     });
     await newProduct.save();
 
-    const productID: string = newProduct._id instanceof mongoose.Types.ObjectId
-    ? newProduct._id.toHexString()
-    : newProduct._id as string; // Type assertion as fallback
+    // Add the product to the shop's products array
+    await Shop.findByIdAndUpdate(shopID, { $push: { products: newProduct._id } });
 
-    // Add product to shop
-    await Shop.findByIdAndUpdate(req.query.shopID, {
-      $push: { products: productID },
-    });
-
-    // Add categories
-    if (req.body.categories) {
-      for (const categoryID of req.body.categories) {
-        await addProductCategory(productID, categoryID);
-      }
-    }
-
-    // Add images if available
-    if (req.files && Array.isArray(req.files)) {
-      for (const file of req.files) {
-        const path = /(\/uploads)(.+)/g.exec(file.path)?.[0] || "";
-        await addProductImage(productID, path);
-      }
-    }
-
-    res.status(201).json(newProduct);
+    res.status(201).json(newProduct); // Send the created product as the response
   } catch (error) {
     next(error);
   }

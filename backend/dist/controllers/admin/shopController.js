@@ -1,15 +1,12 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteShop = exports.showShop = exports.listShop = void 0;
-const db_1 = __importDefault(require("../../config/db")); // Correct path to db.ts
+const db_1 = require("../../config/db");
 const shop_1 = require("./../../models/shop");
 // MongoDB connection setup (consider moving this to a centralized db.ts file)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
+db_1.mongooseInstance.connect("mongodb://admin:password@localhost:27017/ecommerce");
 // Define the Shop model using the imported schema
-const Shop = db_1.default.model("Shop", shop_1.shopSchema);
+const Shop = db_1.mongooseInstance.model("Shop", shop_1.shopSchema);
 // Shop Management =======================================================
 /**
  * List all shops with populated user information

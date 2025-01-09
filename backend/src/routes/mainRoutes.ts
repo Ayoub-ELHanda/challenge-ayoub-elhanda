@@ -1,4 +1,5 @@
 import express from "express";
+import protect from "../middleware/authMiddleware";
 const router = express.Router();
 
 // Importing Controllers ✅ FIXED IMPORTS
@@ -14,6 +15,9 @@ import {
     removeProductReview
 } from "../controllers/indexController";
 
+router.get("/", protect, (req, res) => {
+    res.json({ message: "Welcome to the main route" });
+});
 // ✅ Website Information
 router.get("/site", showSite);
 

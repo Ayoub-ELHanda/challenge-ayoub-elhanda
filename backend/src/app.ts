@@ -1,82 +1,78 @@
-import express, { Request, Response, NextFunction } from "express";
+import express from "express";
 import createError from "http-errors";
 import cookieParser from "cookie-parser";
 import logger from "morgan";
 import cors from "cors";
-import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import mongoose from "./config/db";
-import dotenv from "dotenv";
-dotenv.config();
+import { connectDB, disconnectDB } from "./config/db";
 
+// Import Routes
 import mainRouter from "./routes/mainRoutes";
 import userRouter from "./routes/userRoutes";
 import adminRouter from "./routes/adminRoutes";
 import sellerRouter from "./routes/sellerRoutes";
+import productAdminRouter from "./routes/productRoutes";  // Admin routes for products
+import productSellerRouter from "./routes/sellerProductRoutes"; // Seller routes for products
 
 const app = express();
 
-(global as any).__basedir = __dirname;
+// ✅ MongoDB Connection
+connectDB();
 
-// Configurations from environment variables
-const config = {
-    mongoURI: process.env.MONGO_URI,
-    frontendURL: process.env.FRONTEND_URL || "http://localhost:8000",
-    env: process.env.NODE_ENV || "development"
-};
+// ✅ CORS Configuration
+app.use(cors({ origin: process.env.FRONTEND_URL || "http://localhost:8000" }));
 
-const corsOptions = {
-    origin: config.frontendURL,
-    optionsSuccessStatus: 200,
-};
-app.use(cors(corsOptions));
+// ✅ Rate Limiting
+app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 }));
 
+// ✅ Middleware
 app.use(logger("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json());  // Parse JSON bodies
+app.use(express.urlencoded({ extended: false }));  // Parse URL-encoded bodies
 app.use(cookieParser());
-app.use(helmet());
 
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100 // Limit each IP to 100 requests per window
-});
-app.use(limiter);
+// ✅ Route Definitions
+app.use("/api/main", mainRouter);
+app.use("/api/user", userRouter);
+app.use("/api/seller", sellerRouter);  // Seller-specific routes
+app.use("/api/admin", adminRouter);  // Admin-specific routes
 
-if (!config.mongoURI) {
-    console.error("❌ MONGO_URI is not defined. Check your .env file.");
-    process.exit(1);
-}
+// Product routes for admin and seller
+app.use("/api/admin/products", productAdminRouter);  // Admin route for managing products
+app.use("/api/seller/products", productSellerRouter);  // Seller route for managing products
 
-mongoose.set("strictQuery", false);
-mongoose
-    .connect(config.mongoURI)
-    .then(() => console.log("✅ Connected to MongoDB successfully!"))
-    .catch((err: Error) => {
-        console.error("❌ MongoDB Connection Error:", err.message);
-        process.exit(1);
-    });
-
-app.use("/main", mainRouter);
-app.use("/user", userRouter);
-app.use("/seller", sellerRouter);
-app.use("/admin", adminRouter);
-
-app.use((req: Request, res: Response, next: NextFunction) => {
-    next(createError(404, "Route not found"));
+// ✅ Catch 404 Errors
+app.use((req, res, next) => {
+  next(createError(404));
 });
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    res.locals.message = err.message;
-    res.locals.error = config.env === "development" ? err : {};
+// ✅ Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  res.status(err.status || 500);
+  res.json({ error: err.message });
+});
 
-    console.error("❌ Error:", err.message);
+// Start the server
+const PORT = process.env.PORT || 5000;
+const server = app.listen(PORT, () => {
+  console.log(`✅ Server is running on port ${PORT}`);
+});
 
-    res.status(err.status || 500).json({
-        success: false,
-        message: err.message || "Internal Server Error",
-        error: config.env === "development" ? err : {},
-    });
+// Handle server shutdown gracefully
+process.on("SIGINT", async () => {
+  await disconnectDB();
+  server.close(() => {
+    console.log("🔌 Server shut down gracefully.");
+    process.exit(0);
+  });
+});
+
+process.on("SIGTERM", async () => {
+  await disconnectDB();
+  server.close(() => {
+    console.log("🔌 Server shut down gracefully.");
+    process.exit(0);
+  });
 });
 
 export default app;

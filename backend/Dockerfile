@@ -20,7 +20,7 @@ COPY . .
 RUN npx tsc
 
 # Expose the port the app runs on
-EXPOSE 3000
+EXPOSE 5000
 
 # Run the app from the dist directory
 CMD ["node", "dist/bin/www.js"]

@@ -4,15 +4,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateUser = exports.showUser = exports.changePass = exports.userLogin = exports.userRegister = void 0;
-const db_1 = __importDefault(require("../config/db")); // Correct path to db.ts
+const db_1 = require("../config/db");
 const user_1 = require("../models/user");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const auth_1 = require("../auth");
 // MongoDB connection setup (will now be imported from db.ts)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
+db_1.mongooseInstance.connect("mongodb://admin:password@localhost:27017/ecommerce");
 // Defining models using the imported schemas
-const User = db_1.default.model("User", user_1.userSchema);
-const Role = db_1.default.model("Role", user_1.roleSchema);
+const User = db_1.mongooseInstance.model("User", user_1.userSchema);
+const Role = db_1.mongooseInstance.model("Role", user_1.roleSchema);
 // User Registration ======================================================
 const userRegister = async (req, res, next) => {
     try {
@@ -48,6 +48,7 @@ const userRegister = async (req, res, next) => {
         res.status(201).json(newUser);
     }
     catch (error) {
+        console.error("Error in user registration:", error); // Log the error to understand what's failing
         next(error);
     }
 };

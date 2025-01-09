@@ -1,4 +1,4 @@
-import mongoose from "../config/db";  // Correct path to db.ts
+import { mongooseInstance as mongoose } from "../config/db";
 import { userSchema, roleSchema } from "../models/user";
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
@@ -59,9 +59,11 @@ export const userRegister = async (
 
         res.status(201).json(newUser);
     } catch (error) {
+        console.error("Error in user registration:", error); // Log the error to understand what's failing
         next(error);
     }
 };
+
 
 // User Login ============================================================
 export const userLogin = async (

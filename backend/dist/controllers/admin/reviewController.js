@@ -1,22 +1,14 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteReview = exports.showReview = exports.listReview = void 0;
-const db_1 = __importDefault(require("../../config/db")); // Correct path to db.ts
-const review_1 = require("./../../models/review");
-// MongoDB connection setup (Consider moving this to a central db.ts file)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
-// Define the Review model using the imported schema
-const Review = db_1.default.model("Review", review_1.reviewSchema);
+const review_1 = require("../../models/review"); // Assume Review is exported from the review model file
 // Product Review Management ================================================
 /**
  * List all reviews with populated user and product information
  */
 const listReview = async (req, res, next) => {
     try {
-        const reviews = await Review.find({})
+        const reviews = await review_1.Review.find({})
             .populate("user")
             .populate("product");
         res.json(reviews);
@@ -31,9 +23,13 @@ exports.listReview = listReview;
  */
 const showReview = async (req, res, next) => {
     try {
-        const review = await Review.findById(req.query.id)
+        const review = await review_1.Review.findById(req.query.id)
             .populate("user")
             .populate("product");
+        if (!review) {
+            res.status(404).send({ message: "Review not found" });
+            return;
+        }
         res.json(review);
     }
     catch (error) {
@@ -46,7 +42,11 @@ exports.showReview = showReview;
  */
 const deleteReview = async (req, res, next) => {
     try {
-        const deletedReview = await Review.findByIdAndDelete(req.query.id);
+        const deletedReview = await review_1.Review.findByIdAndDelete(req.query.id);
+        if (!deletedReview) {
+            res.status(404).send({ message: "Review not found" });
+            return;
+        }
         res.json(deletedReview);
     }
     catch (error) {

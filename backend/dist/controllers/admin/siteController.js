@@ -1,15 +1,12 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSite = exports.showSite = exports.updateSite = exports.createSite = exports.listSite = void 0;
-const db_1 = __importDefault(require("../../config/db")); // Correct path to db.ts
+const db_1 = require("../../config/db");
 const site_1 = require("./../../models/site");
 // MongoDB connection setup (consider moving this to a centralized db.ts file)
-db_1.default.connect("mongodb://admin:password@localhost:27017/ecommerce");
+db_1.mongooseInstance.connect("mongodb://admin:password@localhost:27017/ecommerce");
 // Define the Site model using the imported schema
-const Site = db_1.default.model("Site", site_1.siteSchema);
+const Site = db_1.mongooseInstance.model("Site", site_1.siteSchema);
 // Site Management ======================================================
 /**
  * List all sites
